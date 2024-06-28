@@ -36,6 +36,12 @@ const config: HardhatUserConfig = {
       accounts: [LOCAL_PRIVATE_KEY as string],
       gasPrice: 1000000000,
     },
+    // for eth sepolia testnet
+    'eth-test': {
+      url: 'https://ethereum-sepolia-rpc.publicnode.com',
+      accounts: [PRIV_KEY as string],
+      gasPrice: 1000000000,
+    },
   },
   etherscan: {
     apiKey: {

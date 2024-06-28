@@ -6,8 +6,6 @@ async function main() {
   // await token.waitForDeployment();
   // console.log('Token Contract Deployed at ' + token.target);
   
-  const contractType = 'Competition';
-
   const token1 = await ethers.deployContract('Token', ['Name1','Symbol1']);
   const token2 = await ethers.deployContract('Token', ['Name2','Symbol2']);
 
