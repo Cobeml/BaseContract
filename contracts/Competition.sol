@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: MIT 
+// SPDX-License-Identifier: MIT
 pragma solidity ^0.8.19;
 
 import "@openzeppelin/contracts/access/Ownable.sol";
@@ -17,22 +17,24 @@ contract Competition is Ownable {
     uint public liquidity1;
     uint public liquidity2;
 
-    constructor(address _uniswapRouter) Ownable(wallet) {
+    constructor(address _uniswapRouter,address token1_, address token2_) Ownable(wallet) {
         uniswapRouter = IUniswapV2Router02(_uniswapRouter);
+        token1 = token1_;
+        token2 = token2_;
         score[0] = 0;
         score[1] = 0;
     }
 
-    function start(string calldata name1, string calldata symbol1, string calldata name2, string calldata symbol2) onlyOwner external {
-        Token t1 = new Token(name1, symbol1);
-        Token t2 = new Token(name2, symbol2);
-        // end_time = block.timestamp + 10000000;
-        // token1 = address(t1);
-        // token2 = address(t2);
+    function start() onlyOwner external {
+        //Token t1 = new Token(name1, symbol1);
+        //Token t2 = new Token(name2, symbol2);
+        end_time = block.timestamp + 10000000;
+        //token1 = address(t1);
+        //token2 = address(t2);
         // // 100_000 of token printed - see Token.sol
         // // Approve Uniswap Router to spend the tokens
-        // IERC20(token1).approve(address(uniswapRouter), 100_000);
-        // IERC20(token2).approve(address(uniswapRouter), 100_000);
+        IERC20(token1).approve(address(uniswapRouter), 100_000);
+        IERC20(token2).approve(address(uniswapRouter), 100_000);
 
         // (uint amountToken1, uint amountETH1, uint liquidity1_) = uniswapRouter.addLiquidityETH {value: 0.01 ether} (
         //     token1,
@@ -59,7 +61,7 @@ contract Competition is Ownable {
     function getScore() public view returns (uint256[2] memory) {
         return score;
     }
-    
+   
     // Function to update a score at a specific index in the scores array
     function updateScore(uint256 _index, uint256 _newScore) public onlyOwner {
         require(_index < score.length, "Index out of bounds");
@@ -91,9 +93,9 @@ contract Competition is Ownable {
         path[0] = uniswapRouter.WETH(); // WETH address
         path[1] = winner;
         uniswapRouter.swapExactETHForTokens {value: amountETH} (
-            0, 
-            path, 
-            wallet, 
+            0,
+            path,
+            wallet,
             block.timestamp + 3000
         );
 
