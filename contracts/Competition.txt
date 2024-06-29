@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.19;
+pragma solidity ^0.7.6;
 
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@uniswap/v2-periphery/contracts/interfaces/IUniswapV2Router02.sol";
@@ -16,6 +16,8 @@ contract Competition is Ownable {
     uint256[2] public score;
     uint public liquidity1;
     uint public liquidity2;
+    address public winner;
+    address public loser;
 
     constructor(address _uniswapRouter,address token1_, address token2_) Ownable(wallet) {
         uniswapRouter = IUniswapV2Router02(_uniswapRouter);
@@ -23,17 +25,16 @@ contract Competition is Ownable {
         token2 = token2_;
         score[0] = 0;
         score[1] = 0;
+        IERC20(token1).approve(address(uniswapRouter), 50_000);
+        IERC20(token2).approve(address(uniswapRouter), 50_000);
+        end_time = block.timestamp + 10000000;
+
     }
 
     function start() onlyOwner external {
-        end_time = block.timestamp + 10000000;
-
-        IERC20(token1).approve(address(uniswapRouter), 100_000);
-        IERC20(token2).approve(address(uniswapRouter), 100_000);
-
         (uint amountToken1, uint amountETH1, uint liquidity1_) = uniswapRouter.addLiquidityETH {value: 0.0001 ether} (
             token1,
-            100_000,
+            50_000,
             0,
             .00001 ether,
             wallet,
@@ -42,7 +43,7 @@ contract Competition is Ownable {
 
         (uint amountToken2, uint amountETH2, uint liquidity2_) = uniswapRouter.addLiquidityETH {value: 0.0001 ether} (
             token2,
-            100_000,
+            50_000,
             0,
             .00001 ether,
             wallet,
@@ -66,8 +67,6 @@ contract Competition is Ownable {
 
     function end(int winner_) onlyOwner external {
         // winner_ should be 1 or 2
-        address winner;
-        address loser;
         winner = (winner_ == 1 ? token1 : token2);
         loser = (winner_ == 2 ? token1 : token2);
         uint loserLiquidity = (winner_ == 2 ? liquidity1 : liquidity2);

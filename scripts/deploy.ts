@@ -15,7 +15,7 @@ async function main() {
   await token2.waitForDeployment();
   console.log('Token2 contract deployed at', token2.target);
 
-  const competition = await ethers.deployContract('Competition', ['0x4752ba5dbc23f44d87826276bf6fd6b1c372ad24', token1.target + '', token2.target + '']);
+  const competition = await ethers.deployContract('CompetitionV3', [0x27F971cb582BF9E50F397e4d29a5C7A34f11faA2, 0x4752ba5DBc23f44D87826276BF6Fd6b1C372aD24,0x4200000000000000000000000000000000000006, token1.target + '', token2.target + '']);
 
   await competition.waitForDeployment();
 

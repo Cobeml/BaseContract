@@ -6,8 +6,8 @@ async function main() {
     console.log("Using the deployer account:", deployer.address);
 
     // Contract address and ABI
-    const contractAddress = "0x959922bE3CAee4b8Cd9a407cc3ac1C251C2007B1";
-    const contractAbi = require("../artifacts/contracts/Competition.sol/Competition.json").abi;
+    const contractAddress = "0x9894Bfa200E6A6420c93a437A343Ea2035294fb6";
+    const contractAbi = require("../artifacts/contracts/Competition(v3).sol/CompetitionV3.json").abi;
 
     // Create a contract instance
     const contract = new hre.ethers.Contract(contractAddress, contractAbi, deployer);
@@ -20,8 +20,7 @@ async function main() {
     //     console.error("Error:", error);
     // }
     try {
-        const tx = await contract.start("!!Name1", "!!SYM1", "!!Name2", "!!SYM2", { gasLimit: 30000000 });
-        await tx.wait();
+        const tx = await contract.start( { gasLimit: 3_000_000 });
         console.log("Transaction successful:", tx);
     } catch (error) {
         console.error("Error:", error);

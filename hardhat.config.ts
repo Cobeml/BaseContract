@@ -15,7 +15,17 @@ const LOCAL_PRIVATE_KEY="0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784
 
 const config: HardhatUserConfig = {
   solidity: {
-    version: '0.8.23',
+    compilers: [
+      {
+        version: "0.7.6", // Matching the Solidity version of your contracts
+        settings: {
+          optimizer: {
+            enabled: true,
+            runs: 200
+          }
+        }
+      }
+    ]
   },
   networks: {
     // for mainnet
@@ -23,24 +33,29 @@ const config: HardhatUserConfig = {
     //   url: 'https://mainnet.base.org',
     //   accounts: [process.env.PRIVATE_KEY as string],
     //   gasPrice: 1000000000,
+    //   loggingEnabled: true,
     // },
     // for testnet
     'base-sepolia': {
       url: 'https://sepolia.base.org',
       accounts: [PRIV_KEY as string],
       gasPrice: 1000000000,
+      loggingEnabled: true,
+
     },
     // for local dev environment
     'base-local': {
       url: 'http://127.0.0.1:8545/',
       accounts: [LOCAL_PRIVATE_KEY as string],
       gasPrice: 1000000000,
+      loggingEnabled: true,
     },
     // for eth sepolia testnet
     'eth-test': {
       url: 'https://ethereum-sepolia-rpc.publicnode.com',
       accounts: [PRIV_KEY as string],
       gasPrice: 1000000000,
+      loggingEnabled: true,
     },
   },
   etherscan: {
