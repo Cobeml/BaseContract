@@ -17,7 +17,7 @@ const config: HardhatUserConfig = {
   solidity: {
     compilers: [
       {
-        version: "0.7.6", // Matching the Solidity version of your contracts
+        version: "0.8.23", // Matching the Solidity version of your contracts
         settings: {
           optimizer: {
             enabled: true,

@@ -6,6 +6,8 @@ async function main() {
   // await token.waitForDeployment();
   // console.log('Token Contract Deployed at ' + token.target);
   
+  const [deployer] = await ethers.getSigners();
+  console.log("Deployer:", deployer.address);
   const token1 = await ethers.deployContract('Token', ['Name1','Symbol1']);
   const token2 = await ethers.deployContract('Token', ['Name2','Symbol2']);
 
@@ -15,11 +17,16 @@ async function main() {
   await token2.waitForDeployment();
   console.log('Token2 contract deployed at', token2.target);
 
-  const competition = await ethers.deployContract('CompetitionV3', [0x27F971cb582BF9E50F397e4d29a5C7A34f11faA2, 0x4752ba5DBc23f44D87826276BF6Fd6b1C372aD24,0x4200000000000000000000000000000000000006, token1.target + '', token2.target + '']);
+  const competition = await ethers.deployContract('Competition', [token1.target + '', token2.target + '']);
 
   await competition.waitForDeployment();
 
   console.log('Competition Contract Deployed at ' + competition.target);
+
+  const approveTx1 = await token1.approve(competition.target,ethers .parseUnits("100000",18));
+  const approveTx2 = await token2.approve(competition.target, ethers.parseUnits("100000",18));
+  console.log("Token spending approved.");
+
 }
 
 // We recommend this pattern to be able to use async/await everywhere
