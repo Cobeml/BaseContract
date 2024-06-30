@@ -13,10 +13,11 @@ if (!process.env.PRIVATE_KEY) {
 const PRIV_KEY=process.env.PRIVATE_KEY;
 
 // Replace with your contract's address and ABI
-const contractAddress = "0x5853a99Aa16BBcabe1EA1a92c09F984643c04fdB";
+const contractAddress = "0x6b6b4FA0A864A4A2488cC09a079E0398b42d9Cf8";
 const contractAbi = require("../artifacts/contracts/Competition.sol/Competition.json").abi;
 const tokenAbi = require("../artifacts/contracts/Token.sol/Token.json").abi;
-const tokenAddress = "0x75FfA03B837dd4cfFC816cEe3Abd11C01d25e356";
+const token1Address = "0x36b46D912249D7cD855F4DDB9f4C915b95a9E240";
+const token2Address = "0x5264345864FE79E6B3f514b63cF4C4cb820d456e";
 
 async function main() {
     const provider = new ethers.JsonRpcProvider('https://sepolia.base.org');
@@ -24,18 +25,26 @@ async function main() {
 
     // Create contract instances
     const contract = new hre.ethers.Contract(contractAddress, contractAbi, wallet);
+    const token = new hre.ethers.Contract(token1Address, tokenAbi, wallet);
 
     // Define the amount of tokens to cash out
-    const amountToCashOut = ethers.parseUnits("10", 18); // Example: cash out 10 tokens
+    const amountToCashOut = ethers.parseUnits("90", 18); // Example: cash out 90 tokens
 
     // Approve the contract to spend tokens on behalf of the user
     try {
-        const approveTx = await contract.approveTokens(tokenAddress, contractAddress, amountToCashOut);
+        const approveTx = await token.approve(contractAddress, amountToCashOut);
         console.log("Approval transaction successful:", approveTx.hash);
         await approveTx.wait();
     } catch (error) {
         console.error("Error during approval:", error);
         return;
+    }
+
+    try {
+        const tx = await contract.checkAllowance(wallet.address,contractAddress,token1Address,{ gasLimit: 300000 });
+        console.log("Amount Approved to Send:", tx);
+    } catch (error) {
+        console.error("Error:", error);
     }
 
     // Call the cashout function

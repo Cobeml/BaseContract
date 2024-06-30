@@ -17,14 +17,12 @@ contract Competition is Ownable {
     uint public token1Count;
     uint public token2Count;
 
-    uint public numberTokens;
-
     bool public gameEnded;
     address public winner;
     uint tokensReturned;
 
     event TokensPurchased(address buyer, uint256 amount);
-    event TransferAttempt(address indexed from, address indexed to, uint256 value);
+    event TransferAttempt(address from, address to, uint256 value);
     event TransferResult(bool success);
 
     constructor() Ownable(msg.sender) {
@@ -112,6 +110,7 @@ contract Competition is Ownable {
 
     function purchaseToken(IERC20 token) public payable {
         require(gameInProgress == false, "Game in progress");
+        require(gameEnded == false, "Game ended");
 
         uint contractTokenBalance =getTokenBalance(address(token));
 
@@ -139,9 +138,9 @@ contract Competition is Ownable {
 
         // // Transfer the tokens from the owner to the buyer
         emit TransferAttempt(holder, msg.sender, numTokens);
-        // bool success = token.transferFrom(holder, msg.sender, numTokens);
-        // emit TransferResult(success);
-        // require(success, "Token transfer failed");
+        bool success = token.transfer(msg.sender, numTokens);
+        emit TransferResult(success);
+        require(success, "Token transfer failed");
 
         if (address(token)==token1) {
             equivalentETH1 = newEquivalentETH;

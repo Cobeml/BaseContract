@@ -34,7 +34,7 @@ async function main() {
 
   try {
     const tx = await contract.start(token1.target + '', token2.target + '', { gasLimit: 3000000 });
-    console.log("Transaction successful:", tx);
+    console.log("Start Buying Tokens!");
   } catch (error) {
     console.error("Error:", error);
   }
