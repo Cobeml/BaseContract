@@ -6,9 +6,10 @@ import "@openzeppelin/contracts/access/Ownable.sol";
 
 
 contract Token is ERC20, Ownable {
-    address public holder = msg.sender;
+    address public holder;
 
-    constructor(string memory name, string memory symbol) ERC20(name, symbol) Ownable(holder) {
+    constructor(string memory name, string memory symbol, address competitionContract) ERC20(name, symbol) Ownable(msg.sender) {
+        holder = competitionContract;
         _mint(holder, 100_000 * 10 ** decimals());
     }
 }

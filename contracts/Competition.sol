@@ -9,29 +9,35 @@ contract Competition is Ownable {
     address public token1;
     address public token2;
     address payable public holder;
-    uint public end_time;
     uint256[2] public score;
-    bool public gameStarted;
-    uint public price1;
-    uint public price2;
-    uint public token1Count;
-    uint public token2Count;
+    bool public gameInProgress;
     uint public equivalentETH1;
     uint public equivalentETH2;
+    uint public price;
+    uint public token1Count;
+    uint public token2Count;
+
+    uint public numberTokens;
+
+    bool public gameEnded;
+    address public winner;
+    uint tokensReturned;
 
     event TokensPurchased(address buyer, uint256 amount);
+    event TransferAttempt(address indexed from, address indexed to, uint256 value);
+    event TransferResult(bool success);
 
-    constructor(address token1_, address token2_) Ownable(msg.sender) {
-        token1 = token1_;
-        token2 = token2_;
+    constructor() Ownable(msg.sender) {
         score[0] = 0;
         score[1] = 0;
-        holder = payable(msg.sender);
-        equivalentETH1 = 100_000 gwei;
-        equivalentETH2 = 100_000 gwei;
-        token1Count = 100_000;
-        token2Count = 100_000;
-        gameStarted = false;
+        holder = payable(address(this));
+        equivalentETH1 = 100_000 * 1e9;
+        equivalentETH2 = 100_000 * 1e9;
+        gameInProgress = false;
+        gameEnded = false;
+        price = 1 gwei;
+        token1Count = 100_000 * 10**18;
+        token2Count = 100_000 * 10**18;
     }
 
     function getTokenBalance(address token) public view returns (uint256 amount) {
@@ -39,24 +45,40 @@ contract Competition is Ownable {
         return amount;
     }
 
-    function getPrice(address token) public returns (uint256 price_){
-        uint balance = getTokenBalance(token);
+    // Function to approve tokens for spending
+    function approveTokens(address token, address spender, uint256 amount) public returns (bool) {
+        return IERC20(token).approve(spender, amount);
+    }
 
-        uint equivalentETH;
-
-        if (token==token1) {
-            equivalentETH = equivalentETH1;
-            price1 = equivalentETH / balance;
-            price_ = price1;
-        } else if (token==token2) {
-            equivalentETH = equivalentETH2;
-            price2 = equivalentETH / balance;
-            price_ = price2;
+    function getPrice(address token) public view returns (uint256 price_){
+        uint256 tokenBalance = getTokenBalance(token);
+        uint256 tokensCirculating = 100_000 * 1e18 - tokenBalance;
+        if (gameEnded) {
+            if (token == winner) {
+                uint ethBalance = address(this).balance;
+                price_ = ethBalance * 1e18 / tokensCirculating;
+            } else {
+                price_ = 0;
+            }
+            if (token != token1 && token != token2) {
+                revert("Token input is not one of game tokens");
+            }
+            return price_;
         } else {
-            revert("Token input is not one of game tokens");
-        }
+            uint equivalentETH;
 
-        return price_;
+            if (token==token1) {
+                equivalentETH = equivalentETH1;
+                price_ = equivalentETH * 1e18 / tokenBalance;
+            } else if (token==token2) {
+                equivalentETH = equivalentETH2;
+                price_ = equivalentETH * 1e18 / tokenBalance;
+            } else {
+                revert("Token input is not one of game tokens");
+            }
+
+            return price_;
+        }
     }
 
     // Function to calculate the amount of token1 to send back to the buyer
@@ -83,10 +105,15 @@ contract Competition is Ownable {
         return (amountTokenAOut, newTokenBReserve);
     }
 
-    function purchaseToken(ERC20 token) public payable {
-        require(gameStarted == false, "Game in progress");
+    function checkAllowance(address owner, address spender, address tokenAddress) public view returns (uint256) {
+        IERC20 token = IERC20(tokenAddress);
+        return token.allowance(owner, spender);
+    }
 
-        uint contractTokenBalance = IERC20(address(token)).balanceOf(holder);
+    function purchaseToken(IERC20 token) public payable {
+        require(gameInProgress == false, "Game in progress");
+
+        uint contractTokenBalance =getTokenBalance(address(token));
 
         uint equivalentETH;
 
@@ -101,18 +128,20 @@ contract Competition is Ownable {
         // 100_000 tokens corresponds to .0001 eth
         // 1 token = .00_000_0001 eth = 1 gwei
         // Transfer the received Ether to the owner
-        (uint numberTokens, uint newEquivalentETH) = getAmountOut(contractTokenBalance, equivalentETH, msg.value);
-        require(numberTokens > 0, "You must send enough gwei to buy at least 1 token");
-        if (address(token) == token1 && token1Count < numberTokens){
+        (uint numTokens, uint newEquivalentETH) = getAmountOut(contractTokenBalance, equivalentETH, msg.value);
+        require(numTokens > 0, "You must send enough gwei to buy at least 1 token");
+        if (address(token) == token1 && contractTokenBalance < numTokens){
             revert("Insufficient token1 remaining in supply");
         }
-        if (address(token) == token2 && token2Count < numberTokens){
+        if (address(token) == token2 && contractTokenBalance < numTokens){
             revert("Insufficient token2 remaining in supply");
         }
 
-        // Transfer the tokens from the owner to the buyer
-        bool success = token.transferFrom(holder , msg.sender, numberTokens);
-        require(success, "Token transfer failed");
+        // // Transfer the tokens from the owner to the buyer
+        emit TransferAttempt(holder, msg.sender, numTokens);
+        // bool success = token.transferFrom(holder, msg.sender, numTokens);
+        // emit TransferResult(success);
+        // require(success, "Token transfer failed");
 
         if (address(token)==token1) {
             equivalentETH1 = newEquivalentETH;
@@ -120,11 +149,13 @@ contract Competition is Ownable {
             equivalentETH2 = newEquivalentETH;
         }
 
-        emit TokensPurchased(msg.sender, numberTokens);
+        emit TokensPurchased(msg.sender, numTokens);
     }
 
-    function start() public onlyOwner {
-        gameStarted = false;
+    function start(address token1_, address token2_) public onlyOwner {
+        gameInProgress = false;
+        token1 = token1_;
+        token2 = token2_;
     }
 
 
@@ -136,20 +167,36 @@ contract Competition is Ownable {
     function updateScore(uint256 _index, uint256 _newScore) public onlyOwner {
         require(_index < score.length, "Index out of bounds");
         score[_index] = _newScore;
-        gameStarted = true;
+        gameInProgress = true;
     }
 
 
     function end(int winner_) public onlyOwner {
+        gameInProgress = false;
+        gameEnded = true;
+        winner = (winner_ == 1 ? token1 : token2);
+    }
+
+    function cashout(uint amount) public {
+        require(gameEnded == true, "Game not ended");
+        require(amount > 0, "Amount must be greater than zero");
         
+        uint256 winnerBalance = getTokenBalance(winner);
+        uint256 winnerTokensCirculating = 100_000 * 1e18 - winnerBalance;
+        uint256 ethBalance = address(this).balance;
+
+        (uint ethAmount, uint remainingBalance) = getAmountOut(ethBalance,winnerTokensCirculating,amount); 
+        require(address(this).balance >= ethAmount, "Insufficient ETH in contract");
+
+        // Transfer tokens from the user to the contract
+        bool success = IERC20(winner).transferFrom(msg.sender, address(this), amount);
+        require(success, "Token transfer failed");
+
+        // Transfer ETH to the user
+        (bool sent, ) = msg.sender.call{value: ethAmount}("");
+        require(sent, "Failed to send Ether");
+
+        // emit TokensCashedOut(msg.sender, amount);
+        // emit Log("Cashout completed", msg.sender, amount, address(token));
     }
 }
-
-// Things need to decide:
-// - If amount of winner token bought should be all ETH returned from LP or ETH from LP - original contributions
-
-// Things need to do:
-// - Change the amount of ether provided for liquidity with each hosted game
-// - Change the address of the owner to not be my holder
-// - Don't hardcode when deploying
-// - Test

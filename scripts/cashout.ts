@@ -1,28 +1,36 @@
 import { ethers } from "ethers";
 import * as hre from "hardhat";
+import * as dotenv from "dotenv";
+import * as path from "path";
+
+// Load environment variables from .env file
+dotenv.config({ path: path.resolve(__dirname, './.env') });
+
+if (!process.env.PRIVATE_KEY) {
+  throw new Error("Please set your PRIVATE_KEY in a .env file");
+}
+
+const PRIV_KEY=process.env.PRIVATE_KEY;
 
 // Replace with your contract's address and ABI
-const contractAddress = "0xf953b3A269d80e3eB0F2947630Da976B896A8C5b";
+const contractAddress = "0x5853a99Aa16BBcabe1EA1a92c09F984643c04fdB";
 const contractAbi = require("../artifacts/contracts/Competition.sol/Competition.json").abi;
 const tokenAbi = require("../artifacts/contracts/Token.sol/Token.json").abi;
-const tokenAddress = "0x86A2EE8FAf9A840F7a2c64CA3d51209F9A02081D";
+const tokenAddress = "0x75FfA03B837dd4cfFC816cEe3Abd11C01d25e356";
 
 async function main() {
-    // Replace with the user's private key or use the hardhat config
-    const privateKey = "0x59c6995e998f97a5a0044966f0945389dc9e86dae88c7a8412f4603b6b78690d";
-    const provider = new ethers.JsonRpcProvider('http://127.0.0.1:8545/');
-    const wallet = new ethers.Wallet(privateKey, provider);
+    const provider = new ethers.JsonRpcProvider('https://sepolia.base.org');
+    const wallet = new ethers.Wallet(PRIV_KEY, provider);
 
     // Create contract instances
     const contract = new hre.ethers.Contract(contractAddress, contractAbi, wallet);
-    const tokenContract = new hre.ethers.Contract(tokenAddress, tokenAbi, wallet);
 
     // Define the amount of tokens to cash out
-    const amountToCashOut = ethers.parseUnits("69000", 18); // Example: cash out 10 tokens
+    const amountToCashOut = ethers.parseUnits("10", 18); // Example: cash out 10 tokens
 
     // Approve the contract to spend tokens on behalf of the user
     try {
-        const approveTx = await tokenContract.approve(contractAddress, amountToCashOut);
+        const approveTx = await contract.approveTokens(tokenAddress, contractAddress, amountToCashOut);
         console.log("Approval transaction successful:", approveTx.hash);
         await approveTx.wait();
     } catch (error) {
